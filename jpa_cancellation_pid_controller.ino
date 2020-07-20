@@ -1,7 +1,3 @@
-// ********************************************************
-// * PID Basic Example
-// * Reading analog input 0 to control analog PWM output 3
-// ********************************************************/
 #include <PID_v1.h>
 #include <LiquidCrystal.h>
 // Note: Before uploading the code, press the erase button on the Arduino Due.
