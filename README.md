@@ -30,20 +30,53 @@ The Arduino Due has two USB ports: a native USB port and a programming port. To 
 Arduino to the programming port, which is located closest to the DC plug. Once connected open the Arduino IDE's Serial monitor. 
 The default state after uploading the code is a voltage ramp with parameters that are controlled in the top part of the script.
 
-## Controlling the output
+## Operating the controller from the serial plotter
+To use the Arduino serial plotter interfact, first check that  `use_serial_plotter = True` in `jpa_cancellation_pid_controller.ino`.
+Note: by default this variable is set to `false`, to smoothen communication over serial with the python interface (next section).
 
-More details to come...
+Once a successful connection has been established, open the serial plotter and you will see a ramp pattern displayed. 
+The blue and red traces are the measured controller input and the DAC output setting. The y-axis ranges from 0 to 4095 which corresponds to 0 and 3.3V, respectively. 
+In the particular case displayed below, we see that the blue and red traces closely follow each other, because we shorted PID output with the 
+controller input. In a general experimental setting the output and input may not follow each other (perfectly); this depends on the system transfer function.
+![Ramp Operation on the Serial Monitor](serial_monitor_ramp.png)
+
+One can supply the following commands to control: 
+#### Toggle the DAC ramping
+- `R` : Depending on the current state of the controller, this command switches to ramping the DAC, or switches back to closed-loop operation.
+#### Set a setpoint
+- `Sxxxx` : Set a setpoint for closed-loop operation. The controller will attempt to adjust the DAC output in such a way that the controller input equals the setpoint. `xxxx` is a placeholder for four digits and must be in the range `0000` - `4095`.
+#### Take manual control of the DAC output
+- `Mxxxx` : Switches to open loop operation and sets the DAC output to bit value `xxxx`, where `xxxx` is the DAC output bit value, which can range from `0000` (0.0 V) to `4095` (3.3 V)
+
+#### Set PID parameters
+- `Pxxxx` : Set the proportional control of the PID loop. `xxxx` is a four character float, which can range from `0.01` to `9999`. 
+- `Ixxxx` : Set the integral control of the PID loop. `xxxx` is a four character float (see formatting for P).
+- `Dxxxx` : Set the derivative control of the PID loop. `xxxx` is a four character float (see formatting for P).
 
 ## Using the supplied python driver
+The PID controller can also be controlled over serial with the python driver, see `pid.py`. The requirements are 
+- `tabulate` : tool to print settings neatly in a table format.
+- `tqdm` : for showing update as a progress bar.
+- `pyserial`: for communication over USB.
+- `visdom`: used for plotting the input and output in real time.
 
-More details to come...
+To get started install the packages above using pip, and make sure to set `use_serial_plotter = False` in `jpa_cancellation_pid_controller.ino`. 
+Uploade the code to the Arduino. Then, fire up a visdom server:
+
+   ```python -m visdom.server ```
+
+and navigate to `http://localhost:8097`. Open the jupyter notebook. This notebook allows you to change the same settings 
+as with the serial plotter. You can track the input or output of the controller using the visdom server. Below we show a plot
+of the input voltage in closed-loop operation after changing the setpoint to 0.1 V. 
+
+![Settling time of the loop](settling_time.png)
 
 ## Circuit details
 Below we show part of the schematic which links the inputs to the outputs. Firstly, there are two pairs of inputs (lower left corner), 
 which have a single stage low-pass RC-filter and then connect to Analog inputs 0 and 1 of the Arduino Due. The controller
 output are DAC0 and DAC1 of the Arduino Due (output range 0.55 - 2.75 V), which pass through a summing amplifier, RC-filter and a buffer before arriving at the 
 output on the top of this schematic. The summing amplifier aims to scale the Arduino DAC output to 0.0-3.3 V. 
-![PCB layout](circuit_schematic.png).
+![Circuit schematic](circuit_schematic.png).
 
 ### Circuit component list
 All SMD resistors and capacitors are 1206 for convenience of soldering, unless noted otherwise.
